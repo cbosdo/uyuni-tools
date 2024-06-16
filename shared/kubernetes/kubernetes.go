@@ -114,11 +114,13 @@ func Stop(namespace string, app string) error {
 	return ReplicasTo(namespace, app, 0)
 }
 
-func get(component string, componentName string, args ...string) ([]byte, error) {
+func get(namespace string, component string, componentName string, args ...string) ([]byte, error) {
 	kubectlArgs := []string{
 		"get",
 		component,
 		componentName,
+		"-n",
+		namespace,
 	}
 
 	kubectlArgs = append(kubectlArgs, args...)
@@ -131,8 +133,8 @@ func get(component string, componentName string, args ...string) ([]byte, error)
 }
 
 // GetConfigMap returns the value of a given config map.
-func GetConfigMap(configMapName string, filter string) (string, error) {
-	out, err := get("configMap", configMapName, filter)
+func GetConfigMap(namespace string, configMapName string, filter string) (string, error) {
+	out, err := get(namespace, "configMap", configMapName, filter)
 	if err != nil {
 		return "", utils.Errorf(err, L("failed to run kubectl get configMap %[1]s %[2]s"), configMapName, filter)
 	}
@@ -141,8 +143,8 @@ func GetConfigMap(configMapName string, filter string) (string, error) {
 }
 
 // GetSecret returns the value of a given secret.
-func GetSecret(secretName string, filter string) (string, error) {
-	out, err := get("secret", secretName, filter)
+func GetSecret(namespace string, secretName string, filter string) (string, error) {
+	out, err := get(namespace, "secret", secretName, filter)
 	if err != nil {
 		return "", utils.Errorf(err, L("failed to run kubectl get secret %[1]s %[2]s"), secretName, filter)
 	}

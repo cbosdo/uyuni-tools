@@ -5,6 +5,7 @@
 package kubernetes
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -14,6 +15,7 @@ import (
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 	"github.com/uyuni-project/uyuni-tools/mgrpxy/shared/utils"
+	"github.com/uyuni-project/uyuni-tools/shared"
 	"github.com/uyuni-project/uyuni-tools/shared/kubernetes"
 	. "github.com/uyuni-project/uyuni-tools/shared/l10n"
 	shared_utils "github.com/uyuni-project/uyuni-tools/shared/utils"
@@ -33,6 +35,12 @@ func Deploy(imageFlags *utils.ProxyImageFlags, helmFlags *HelmFlags, configDir s
 ) error {
 	log.Info().Msg(L("Installing Uyuni proxy"))
 
+	cnx := shared.NewConnection("kubectl", "", kubernetes.ProxyFilter)
+	namespace, err := cnx.GetNamespace("")
+	if err == nil {
+		log.Info().Msgf(L("Found an existing proxy installation to reuse configuration from"))
+	}
+
 	helmParams := []string{}
 
 	// Pass the user-provided values file
@@ -42,22 +50,34 @@ func Deploy(imageFlags *utils.ProxyImageFlags, helmFlags *HelmFlags, configDir s
 	}
 
 	if !shared_utils.FileExists(path.Join(configDir, "httpd.yaml")) {
-		if _, err := getHTTPDYaml(configDir); err != nil {
-			return err
+		if namespace != "" {
+			if _, err := getHTTPDYaml(namespace, configDir); err != nil {
+				return err
+			}
+		} else {
+			return errors.New(L("no provided configuration and no existing installation to get it from"))
 		}
 	}
 	helmParams = append(helmParams, "-f", path.Join(configDir, "httpd.yaml"))
 
 	if !shared_utils.FileExists(path.Join(configDir, "ssh.yaml")) {
-		if _, err := getSSHYaml(configDir); err != nil {
-			return err
+		if namespace != "" {
+			if _, err := getSSHYaml(namespace, configDir); err != nil {
+				return err
+			}
+		} else {
+			return errors.New(L("no provided configuration and no existing installation to get it from"))
 		}
 	}
 	helmParams = append(helmParams, "-f", path.Join(configDir, "ssh.yaml"))
 
 	if !shared_utils.FileExists(path.Join(configDir, "config.yaml")) {
-		if _, err := getConfigYaml(configDir); err != nil {
-			return err
+		if namespace != "" {
+			if _, err := getConfigYaml(namespace, configDir); err != nil {
+				return err
+			}
+		} else {
+			return errors.New(L("no provided configuration and no existing installation to get it from"))
 		}
 	}
 	helmParams = append(helmParams, "-f", path.Join(configDir, "config.yaml"))
@@ -100,8 +120,8 @@ func Deploy(imageFlags *utils.ProxyImageFlags, helmFlags *HelmFlags, configDir s
 	return kubernetes.WaitForDeployment(helmFlags.Proxy.Namespace, helmAppName, "uyuni-proxy")
 }
 
-func getSSHYaml(directory string) (string, error) {
-	sshPayload, err := kubernetes.GetSecret("proxy-secret", "-o=jsonpath={.data.ssh\\.yaml}")
+func getSSHYaml(namespace string, directory string) (string, error) {
+	sshPayload, err := kubernetes.GetSecret(namespace, "proxy-secret", "-o=jsonpath={.data.ssh\\.yaml}")
 	if err != nil {
 		return "", err
 	}
@@ -115,8 +135,8 @@ func getSSHYaml(directory string) (string, error) {
 	return sshYamlFilename, nil
 }
 
-func getHTTPDYaml(directory string) (string, error) {
-	httpdPayload, err := kubernetes.GetSecret("proxy-secret", "-o=jsonpath={.data.httpd\\.yaml}")
+func getHTTPDYaml(namespace string, directory string) (string, error) {
+	httpdPayload, err := kubernetes.GetSecret(namespace, "proxy-secret", "-o=jsonpath={.data.httpd\\.yaml}")
 	if err != nil {
 		return "", err
 	}
@@ -130,8 +150,8 @@ func getHTTPDYaml(directory string) (string, error) {
 	return httpdYamlFilename, nil
 }
 
-func getConfigYaml(directory string) (string, error) {
-	configPayload, err := kubernetes.GetConfigMap("proxy-configMap", "-o=jsonpath={.data.config\\.yaml}")
+func getConfigYaml(namespace string, directory string) (string, error) {
+	configPayload, err := kubernetes.GetConfigMap(namespace, "proxy-configMap", "-o=jsonpath={.data.config\\.yaml}")
 	if err != nil {
 		return "", err
 	}
