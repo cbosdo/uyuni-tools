@@ -5,9 +5,9 @@
 package logs
 
 import (
-	"os/exec"
 	"strings"
 
+	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	. "github.com/uyuni-project/uyuni-tools/shared/l10n"
 
@@ -84,7 +84,12 @@ func getContainerNames(cmd *cobra.Command, args []string, toComplete string) ([]
 	var names []string
 
 	if systemd.HasService(podman.ProxyService) {
-		names = getNames(exec.Command("podman", "ps", "--format", "{{.Names}}"), "\n", "uyuni")
+		out, err := utils.RunCmdOutput(zerolog.DebugLevel, "podman", "ps", "--format", "{{.Names}}")
+		if err != nil {
+			log.Error().Err(err).Msg(L("Failed to get the podman container names"))
+		} else {
+			names = getNames(out, "\n", "uyuni")
+		}
 	} else if utils.IsInstalled("kubectl") && utils.IsInstalled("helm") {
 		if len(args) == 0 {
 			cnx := shared.NewConnection("kubectl", "", kubernetes.ProxyFilter)
@@ -94,7 +99,12 @@ func getContainerNames(cmd *cobra.Command, args []string, toComplete string) ([]
 			}
 			return []string{podName}, cobra.ShellCompDirectiveNoFileComp
 		} else if len(args) == 1 {
-			names = getNames(exec.Command("kubectl", "get", "pod", args[0], "-o", "jsonpath={.spec.containers[*].name}"), " ", "")
+			out, err := utils.RunCmdOutput(zerolog.DebugLevel, "kubectl", "get", "pod", args[0], "-o", "jsonpath={.spec.containers[*].name}")
+			if err != nil {
+				log.Error().Err(err).Msg(L("Failed to get the kubernetes pod names"))
+			} else {
+				names = getNames(out, " ", "")
+			}
 		} else {
 			//kubernetes log only accepts either 1 container name or the --all-containers flag.
 			return names, cobra.ShellCompDirectiveNoFileComp
@@ -105,12 +115,7 @@ func getContainerNames(cmd *cobra.Command, args []string, toComplete string) ([]
 }
 
 // retrieves pod/container retrieve command and parses its names for auto completion.
-func getNames(cmd *exec.Cmd, cmdResultSeparator string, namesPrefix string) []string {
-	out, err := cmd.Output()
-	if err != nil {
-		return nil
-	}
-
+func getNames(out []byte, cmdResultSeparator string, namesPrefix string) []string {
 	names := strings.Split(strings.TrimSpace(string(out)), cmdResultSeparator)
 	if namesPrefix == "" {
 		return names
