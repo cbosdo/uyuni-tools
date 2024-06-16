@@ -91,15 +91,21 @@ func getContainerNames(cmd *cobra.Command, args []string, toComplete string) ([]
 			names = getNames(out, "\n", "uyuni")
 		}
 	} else if utils.IsInstalled("kubectl") && utils.IsInstalled("helm") {
+		cnx := shared.NewConnection("kubectl", "", kubernetes.ProxyFilter)
 		if len(args) == 0 {
-			cnx := shared.NewConnection("kubectl", "", kubernetes.ProxyFilter)
 			podName, err := cnx.GetPodName()
 			if err != nil {
-				log.Fatal().Err(err)
+				log.Error().Err(err).Msg(L("Failed to find the installed proxy pod"))
+				return names, cobra.ShellCompDirectiveNoFileComp
 			}
 			return []string{podName}, cobra.ShellCompDirectiveNoFileComp
 		} else if len(args) == 1 {
-			out, err := utils.RunCmdOutput(zerolog.DebugLevel, "kubectl", "get", "pod", args[0], "-o", "jsonpath={.spec.containers[*].name}")
+			namespace, err := cnx.GetNamespace("")
+			if err != nil {
+				log.Error().Err(err).Msg(L("Failed to get the kubernetes namespace where the proxy is installed"))
+				return names, cobra.ShellCompDirectiveNoFileComp
+			}
+			out, err := utils.RunCmdOutput(zerolog.DebugLevel, "kubectl", "get", "pod", args[0], "-n", namespace, "-o", "jsonpath={.spec.containers[*].name}")
 			if err != nil {
 				log.Error().Err(err).Msg(L("Failed to get the kubernetes pod names"))
 			} else {
