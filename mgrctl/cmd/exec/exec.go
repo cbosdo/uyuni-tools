@@ -96,7 +96,7 @@ func run(globalFlags *types.GlobalFlags, flags *flagpole, cmd *cobra.Command, ar
 		commandArgs = append(commandArgs, newEnv...)
 	}
 	commandArgs = append(commandArgs, "sh", "-c", strings.Join(args, " "))
-	err = RunRawCmd(command, commandArgs)
+	err = runRawCmd(command, commandArgs)
 	if err != nil {
 		if exitErr, ok := err.(*exec.ExitError); ok {
 			log.Info().Err(err).Msg(L("Command failed"))
@@ -131,7 +131,7 @@ func (l copyWriter) Write(p []byte) (n int, err error) {
 }
 
 // RunRawCmd runs a command, mapping stdout and start error, waiting and checking return code.
-func RunRawCmd(command string, args []string) error {
+func runRawCmd(command string, args []string) error {
 	commandStr := fmt.Sprintf("%s %s", command, strings.Join(args, " "))
 	log.Info().Msgf(L("Running %s"), commandStr)
 
