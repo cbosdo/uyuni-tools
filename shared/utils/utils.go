@@ -246,7 +246,7 @@ func ComputePTF(user string, ptfId string, fullImage string, suffix string) (str
 
 // Get the timezone set on the machine running the tool.
 func GetLocalTimezone() string {
-	out, err := RunCmdOutput(zerolog.DebugLevel, "timedatectl", "show", "--value", "-p", "Timezone")
+	out, _, err := RunCmdOutput(zerolog.DebugLevel, "timedatectl", "show", "--value", "-p", "Timezone")
 	if err != nil {
 		log.Fatal().Err(err).Msgf(L("Failed to run %s"), "timedatectl show --value -p Timezone")
 	}
@@ -430,7 +430,7 @@ func GetFqdn(args []string) (string, error) {
 	if len(args) == 1 {
 		fqdn = args[0]
 	} else {
-		fqdn_b, err := RunCmdOutput(zerolog.DebugLevel, "hostname", "-f")
+		fqdn_b, _, err := RunCmdOutput(zerolog.DebugLevel, "hostname", "-f")
 		if err != nil {
 			return "", Errorf(err, L("failed to compute server FQDN"))
 		}

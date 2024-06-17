@@ -51,7 +51,7 @@ func (infos ClusterInfos) GetKubeconfig() string {
 // CheckCluster return cluster information.
 func CheckCluster() (*ClusterInfos, error) {
 	// Get the kubelet version
-	out, err := utils.RunCmdOutput(zerolog.DebugLevel, "kubectl", "get", "node",
+	out, _, err := utils.RunCmdOutput(zerolog.DebugLevel, "kubectl", "get", "node",
 		"-o", "jsonpath={.items[0].status.nodeInfo.kubeletVersion}")
 	if err != nil {
 		return nil, utils.Errorf(err, L("failed to get kubelet version"))
@@ -77,7 +77,7 @@ func guessIngress() (string, error) {
 	}
 
 	// Look for a pod running the nginx-ingress-controller: there is no other common way to find out
-	out, err := utils.RunCmdOutput(zerolog.DebugLevel, "kubectl", "get", "pod", "-A",
+	out, _, err := utils.RunCmdOutput(zerolog.DebugLevel, "kubectl", "get", "pod", "-A",
 		"-o", "jsonpath={range .items[*]}{.spec.containers[*].args[0]}{.spec.containers[*].command}{end}")
 	if err != nil {
 		return "", utils.Errorf(err, L("failed to get pod commands to look for nginx controller"))
@@ -125,7 +125,7 @@ func get(namespace string, component string, componentName string, args ...strin
 
 	kubectlArgs = append(kubectlArgs, args...)
 
-	output, err := utils.RunCmdOutput(zerolog.DebugLevel, "kubectl", kubectlArgs...)
+	output, _, err := utils.RunCmdOutput(zerolog.DebugLevel, "kubectl", kubectlArgs...)
 	if err != nil {
 		return []byte{}, err
 	}
@@ -212,7 +212,7 @@ func AddSccSecret(helmArgs []string, namespace string, scc *types.SCCCredentials
 //
 // This assumes only one secret is defined on the deployment.
 func GetDeploymentImagePullSecret(namespace string, filter string) (string, error) {
-	out, err := utils.RunCmdOutput(zerolog.DebugLevel, "kubectl", "get", "deploy", "-n", namespace, filter,
+	out, _, err := utils.RunCmdOutput(zerolog.DebugLevel, "kubectl", "get", "deploy", "-n", namespace, filter,
 		"-o", "jsonpath={.items[*].spec.template.spec.imagePullSecrets[*].name}",
 	)
 	if err != nil {

@@ -26,7 +26,7 @@ func GetSupportConfigPath(out string) string {
 
 // GetSupportConfigFileSaveName returns the support config file name.
 func GetSupportConfigFileSaveName() string {
-	hostname_b, err := RunCmdOutput(zerolog.DebugLevel, "hostname")
+	hostname_b, _, err := RunCmdOutput(zerolog.DebugLevel, "hostname")
 	var hostname string
 	if err != nil {
 		log.Warn().Err(err).Msg(L("Unable to detect hostname, using localhost"))
@@ -83,7 +83,7 @@ func RunSupportConfigOnHost(dir string) ([]string, error) {
 
 	// Run supportconfig on the host if installed
 	if _, err := exec.LookPath("supportconfig"); err == nil {
-		out, err := RunCmdOutput(zerolog.DebugLevel, "supportconfig")
+		out, _, err := RunCmdOutput(zerolog.DebugLevel, "supportconfig")
 		if err != nil {
 			return []string{}, Errorf(err, L("failed to run supportconfig on the host"))
 		}

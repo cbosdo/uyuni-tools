@@ -92,7 +92,7 @@ func HasHelmRelease(release string, kubeconfig string) bool {
 			args = append(args, "--kubeconfig", kubeconfig)
 		}
 		args = append(args, "list", "-aAq", "--no-headers", "-f", release)
-		out, err := utils.RunCmdOutput(zerolog.TraceLevel, "helm", args...)
+		out, _, err := utils.RunCmdOutput(zerolog.TraceLevel, "helm", args...)
 		return len(bytes.TrimSpace(out)) != 0 && err == nil
 	}
 	return false

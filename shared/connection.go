@@ -70,7 +70,7 @@ func (c *Connection) GetCommand() (string, error) {
 			_, err = exec.LookPath("kubectl")
 			if err == nil {
 				hasKubectl = true
-				if out, err := utils.RunCmdOutput(zerolog.DebugLevel, "kubectl", "--request-timeout=30s", "get", "pod", c.kubernetesFilter, "-A", "-o=jsonpath={.items[*].metadata.name}"); err != nil {
+				if out, _, err := utils.RunCmdOutput(zerolog.DebugLevel, "kubectl", "--request-timeout=30s", "get", "pod", c.kubernetesFilter, "-A", "-o=jsonpath={.items[*].metadata.name}"); err != nil {
 					log.Info().Msg(L("kubectl not configured to connect to a cluster, ignoring"))
 				} else if len(bytes.TrimSpace(out)) != 0 {
 					c.command = "kubectl"
@@ -182,7 +182,7 @@ func (c *Connection) GetPodName() (string, error) {
 		case "podman-remote":
 			fallthrough
 		case "podman":
-			if out, _ := utils.RunCmdOutput(zerolog.DebugLevel, c.command, "ps", "-q", "-f", "name="+c.container); len(out) == 0 {
+			if out, _, _ := utils.RunCmdOutput(zerolog.DebugLevel, c.command, "ps", "-q", "-f", "name="+c.container); len(out) == 0 {
 				err = fmt.Errorf(L("container %s is not running on podman"), c.container)
 			} else {
 				log.Trace().Msgf("Found container ID '%s'", out)
@@ -190,7 +190,7 @@ func (c *Connection) GetPodName() (string, error) {
 			}
 		case "kubectl":
 			// We try the first item on purpose to make the command fail if not available
-			if podName, _ := utils.RunCmdOutput(zerolog.DebugLevel, "kubectl", "get", "pod", c.kubernetesFilter, "-A",
+			if podName, _, _ := utils.RunCmdOutput(zerolog.DebugLevel, "kubectl", "get", "pod", c.kubernetesFilter, "-A",
 				"-o=jsonpath={.items[0].metadata.name}"); len(podName) == 0 {
 				err = fmt.Errorf(L("container labeled %s is not running on kubectl"), c.kubernetesFilter)
 			} else {
@@ -231,7 +231,8 @@ func (c *Connection) Exec(command string, args ...string) ([]byte, error) {
 	shellArgs := append([]string{command}, args...)
 	cmdArgs = append(cmdArgs, shellArgs...)
 
-	return utils.RunCmdOutput(zerolog.DebugLevel, cmd, cmdArgs...)
+	out, _, err := utils.RunCmdOutput(zerolog.DebugLevel, cmd, cmdArgs...)
+	return out, err
 }
 
 // WaitForContainer waits up to 10 sec for the container to appear.
@@ -381,7 +382,7 @@ func (c *Connection) TestExistenceInPod(dstpath string) bool {
 		log.Fatal().Msgf(L("unknown container kind: %s"), command)
 	}
 
-	if _, err := utils.RunCmdOutput(zerolog.DebugLevel, command, commandArgs...); err != nil {
+	if _, _, err := utils.RunCmdOutput(zerolog.DebugLevel, command, commandArgs...); err != nil {
 		return false
 	}
 	return true
@@ -527,7 +528,7 @@ func extractNamespaceFromConfig(appName string, kubeconfig string, filters ...st
 	args = append(args, "list", "-aA", "-f", appName, "-o", "json")
 	args = append(args, filters...)
 
-	out, err := utils.RunCmdOutput(zerolog.DebugLevel, "helm", args...)
+	out, _, err := utils.RunCmdOutput(zerolog.DebugLevel, "helm", args...)
 	if err != nil {
 		return "", utils.Errorf(err, L("failed to detect %s's namespace using helm"), appName)
 	}

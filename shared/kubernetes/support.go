@@ -45,7 +45,7 @@ func fetchConfigMap(dir string, namespace string) (string, error) {
 		return "", utils.Errorf(err, L("cannot create %s"), configmapFile.Name())
 	}
 	defer configmapFile.Close()
-	out, err := utils.RunCmdOutput(zerolog.DebugLevel, "kubectl", "get", "configmap", "-o", "yaml", "-n", namespace)
+	out, _, err := utils.RunCmdOutput(zerolog.DebugLevel, "kubectl", "get", "configmap", "-o", "yaml", "-n", namespace)
 	if err != nil {
 		return "", utils.Errorf(err, L("cannot fetch configmap"))
 	}
@@ -71,7 +71,7 @@ func fetchPodYaml(dir string, namespace string, filter string) ([]string, error)
 			continue
 		}
 		defer podFile.Close()
-		out, err := utils.RunCmdOutput(zerolog.DebugLevel, "kubectl", "get", "pod", pod, "-o", "yaml", "-n", namespace)
+		out, _, err := utils.RunCmdOutput(zerolog.DebugLevel, "kubectl", "get", "pod", pod, "-o", "yaml", "-n", namespace)
 		if err != nil {
 			log.Warn().Msgf(L("failed to fetch info for pod %s"), podFile.Name())
 			continue

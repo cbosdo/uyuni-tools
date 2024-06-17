@@ -160,7 +160,7 @@ func GetRpmImagePath(image string) string {
 }
 
 func loadRpmImage(rpmImageBasePath string) (string, error) {
-	out, err := utils.RunCmdOutput(zerolog.DebugLevel, "podman", "load", "--quiet", "--input", rpmImageBasePath)
+	out, _, err := utils.RunCmdOutput(zerolog.DebugLevel, "podman", "load", "--quiet", "--input", rpmImageBasePath)
 	if err != nil {
 		return "", err
 	}
@@ -174,7 +174,7 @@ func loadRpmImage(rpmImageBasePath string) (string, error) {
 // IsImagePresent return true if the image is present.
 func IsImagePresent(image string) (string, error) {
 	log.Debug().Msgf("Checking for %s", image)
-	out, err := utils.RunCmdOutput(zerolog.DebugLevel, "podman", "images", "--format={{ .Repository }}", image)
+	out, _, err := utils.RunCmdOutput(zerolog.DebugLevel, "podman", "images", "--format={{ .Repository }}", image)
 	if err != nil {
 		return "", fmt.Errorf(L("failed to check if image %s has already been pulled"), image)
 	}
@@ -188,7 +188,7 @@ func IsImagePresent(image string) (string, error) {
 		return "", nil
 	}
 	log.Debug().Msgf("Checking for local image of %s", image)
-	out, err = utils.RunCmdOutput(zerolog.DebugLevel, "podman", "images", "--quiet", "localhost/"+splitImage[1])
+	out, _, err = utils.RunCmdOutput(zerolog.DebugLevel, "podman", "images", "--quiet", "localhost/"+splitImage[1])
 	if err != nil {
 		return "", fmt.Errorf(L("failed to check if image %s has already been pulled"), image)
 	}
@@ -203,7 +203,7 @@ func IsImagePresent(image string) (string, error) {
 func GetPulledImageName(image string) (string, error) {
 	parts := strings.Split(image, "/")
 	imageWithTag := parts[len(parts)-1]
-	out, err := utils.RunCmdOutput(zerolog.DebugLevel, "podman", "images", imageWithTag, "--format", "{{.Repository}}")
+	out, _, err := utils.RunCmdOutput(zerolog.DebugLevel, "podman", "images", imageWithTag, "--format", "{{.Repository}}")
 	if err != nil {
 		return "", fmt.Errorf(L("failed to check if image %s has already been pulled"), parts[len(parts)-1])
 	}
@@ -244,7 +244,7 @@ func ShowAvailableTag(registry string, image types.ImageFlags) error {
 func GetRunningImage(container string) (string, error) {
 	log.Info().Msgf(L("Running podman ps --filter=name=%s --format={{ .Image }}"), container)
 
-	out, err := utils.RunCmdOutput(zerolog.DebugLevel, "podman", "ps", fmt.Sprintf("--filter=name=%s", container), "--format='{{ .Image }}'")
+	out, _, err := utils.RunCmdOutput(zerolog.DebugLevel, "podman", "ps", fmt.Sprintf("--filter=name=%s", container), "--format='{{ .Image }}'")
 	if err != nil {
 		return "", utils.Errorf(err, L("cannot find any running image for container %s"), container)
 	}

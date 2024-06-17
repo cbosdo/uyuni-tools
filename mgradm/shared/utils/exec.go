@@ -141,7 +141,7 @@ func RunningImage(cnx *shared.Connection, containerName string) (string, error) 
 	switch command {
 	case "podman":
 		args := []string{"ps", "--format", "{{.Image}}", "--noheading"}
-		image, err := utils.RunCmdOutput(zerolog.DebugLevel, "podman", args...)
+		image, _, err := utils.RunCmdOutput(zerolog.DebugLevel, "podman", args...)
 		if err != nil {
 			return "", err
 		}
@@ -153,7 +153,7 @@ func RunningImage(cnx *shared.Connection, containerName string) (string, error) 
 		// {.items[0].spec.containers[?(@.name=="` + containerName + `")].image but there are problems
 		// using RunCmdOutput with an arguments with round brackets
 		args := []string{"get", "pods", kubernetes.ServerFilter, "-o", "jsonpath={.items[0].spec.containers[0].image}"}
-		image, err := utils.RunCmdOutput(zerolog.DebugLevel, "kubectl", args...)
+		image, _, err := utils.RunCmdOutput(zerolog.DebugLevel, "kubectl", args...)
 
 		log.Info().Msgf(L("Image is: %s"), image)
 		if err != nil {

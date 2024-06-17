@@ -88,7 +88,7 @@ func prepareSource(source string) (string, bool, error) {
 			source,
 			srcdir,
 		}
-		if out, err := utils.RunCmdOutput(zerolog.DebugLevel, "/usr/bin/sudo", mountCmd...); err != nil {
+		if out, _, err := utils.RunCmdOutput(zerolog.DebugLevel, "/usr/bin/sudo", mountCmd...); err != nil {
 			log.Debug().Msgf("Error mounting ISO image: '%s'", out)
 			return "", needremove, fmt.Errorf(L("unable to mount ISO image: %s"), out)
 		}

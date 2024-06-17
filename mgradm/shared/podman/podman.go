@@ -145,7 +145,7 @@ func UpdateSslCertificate(cnx *shared.Connection, chain *ssl.CaChain, serverPair
 	}
 
 	// Check and install then using mgr-ssl-cert-setup
-	if _, err := utils.RunCmdOutput(zerolog.InfoLevel, "podman", args...); err != nil {
+	if _, _, err := utils.RunCmdOutput(zerolog.InfoLevel, "podman", args...); err != nil {
 		return errors.New(L("failed to update SSL certificate"))
 	}
 
@@ -476,7 +476,7 @@ func CallCloudGuestRegistryAuth() error {
 // GetMountPoint return folder where a given volume is mounted.
 func GetMountPoint(volumeName string) (string, error) {
 	args := []string{"volume", "inspect", "--format", "{{.Mountpoint}}", volumeName}
-	mountPoint, err := utils.RunCmdOutput(zerolog.DebugLevel, "podman", args...)
+	mountPoint, _, err := utils.RunCmdOutput(zerolog.DebugLevel, "podman", args...)
 	if err != nil {
 		return "", err
 	}

@@ -84,7 +84,7 @@ func getContainerNames(cmd *cobra.Command, args []string, toComplete string) ([]
 	var names []string
 
 	if systemd.HasService(podman.ProxyService) {
-		out, err := utils.RunCmdOutput(zerolog.DebugLevel, "podman", "ps", "--format", "{{.Names}}")
+		out, _, err := utils.RunCmdOutput(zerolog.DebugLevel, "podman", "ps", "--format", "{{.Names}}")
 		if err != nil {
 			log.Error().Err(err).Msg(L("Failed to get the podman container names"))
 		} else {
@@ -105,7 +105,7 @@ func getContainerNames(cmd *cobra.Command, args []string, toComplete string) ([]
 				log.Error().Err(err).Msg(L("Failed to get the kubernetes namespace where the proxy is installed"))
 				return names, cobra.ShellCompDirectiveNoFileComp
 			}
-			out, err := utils.RunCmdOutput(zerolog.DebugLevel, "kubectl", "get", "pod", args[0], "-n", namespace, "-o", "jsonpath={.spec.containers[*].name}")
+			out, _, err := utils.RunCmdOutput(zerolog.DebugLevel, "kubectl", "get", "pod", args[0], "-n", namespace, "-o", "jsonpath={.spec.containers[*].name}")
 			if err != nil {
 				log.Error().Err(err).Msg(L("Failed to get the kubernetes pod names"))
 			} else {

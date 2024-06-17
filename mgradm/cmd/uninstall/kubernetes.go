@@ -52,7 +52,7 @@ func uninstallForKubernetes(
 
 	// Remove the remaining configmap and secrets
 	if serverNamespace != "" {
-		_, err := utils.RunCmdOutput(zerolog.TraceLevel, "kubectl", "-n", serverNamespace, "get", "secret", "uyuni-ca")
+		_, _, err := utils.RunCmdOutput(zerolog.TraceLevel, "kubectl", "-n", serverNamespace, "get", "secret", "uyuni-ca")
 		caSecret := "uyuni-ca"
 		if err != nil {
 			caSecret = ""

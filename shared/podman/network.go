@@ -5,7 +5,6 @@
 package podman
 
 import (
-	"os/exec"
 	"strings"
 
 	"github.com/rs/zerolog"
@@ -18,7 +17,7 @@ import (
 const UyuniNetwork = "uyuni"
 
 func hasIpv6Enabled(network string) bool {
-	hasIpv6, err := utils.RunCmdOutput(zerolog.DebugLevel, "podman", "network", "inspect",
+	hasIpv6, _, err := utils.RunCmdOutput(zerolog.DebugLevel, "podman", "network", "inspect",
 		"--format", "{{.IPv6Enabled}}", network)
 	if err == nil && strings.TrimSpace(string(hasIpv6)) == "true" {
 		return true
@@ -59,7 +58,7 @@ func SetupNetwork(isProxy bool) (bool, error) {
 	if ipv6Enabled {
 		// An IPv6 network on a host where IPv6 is disabled doesn't work: don't try it.
 		// Check if the networkd backend is netavark
-		out, err := utils.RunCmdOutput(zerolog.DebugLevel, "podman", "info", "--format", "{{.Host.NetworkBackend}}")
+		out, _, err := utils.RunCmdOutput(zerolog.DebugLevel, "podman", "info", "--format", "{{.Host.NetworkBackend}}")
 		backend := strings.Trim(string(out), "\n")
 		if err != nil {
 			return ipv6Enabled, utils.Errorf(err, L("failed to find podman's network backend"))
@@ -118,9 +117,9 @@ func DeleteNetwork(dryRun bool) {
 
 // IsNetworkPresent returns whether a network is already present.
 func IsNetworkPresent(network string) bool {
-	cmd := exec.Command("podman", "network", "exists", network)
-	if err := cmd.Run(); err != nil {
+	_, exitCode, err := utils.RunCmdOutput(zerolog.Disabled, "podman", "network", "exists", network)
+	if err != nil {
 		return false
 	}
-	return cmd.ProcessState.ExitCode() == 0
+	return exitCode == 0
 }

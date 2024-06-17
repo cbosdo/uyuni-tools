@@ -42,7 +42,7 @@ func WaitForDeployment(namespace string, name string, appName string) error {
 	cmdArgs = addNamespace(cmdArgs, namespace)
 
 	for i := 0; i < 60; i++ {
-		out, err := utils.RunCmdOutput(zerolog.DebugLevel, "kubectl", cmdArgs...)
+		out, _, err := utils.RunCmdOutput(zerolog.DebugLevel, "kubectl", cmdArgs...)
 		if err == nil {
 			podName = string(out)
 			break
@@ -83,7 +83,7 @@ func WaitForPulledImage(namespace string, podName string) error {
 	failedArgs = addNamespace(failedArgs, namespace)
 	for {
 		// Look for events indicating an image pull issue
-		out, err := utils.RunCmdOutput(zerolog.TraceLevel, "kubectl", failedArgs...)
+		out, _, err := utils.RunCmdOutput(zerolog.TraceLevel, "kubectl", failedArgs...)
 		if err != nil {
 			return fmt.Errorf(L("failed to get failed events for pod %s"), podName)
 		}
@@ -95,7 +95,7 @@ func WaitForPulledImage(namespace string, podName string) error {
 		}
 
 		// Has the image pull finished?
-		out, err = utils.RunCmdOutput(zerolog.TraceLevel, "kubectl", pulledArgs...)
+		out, _, err = utils.RunCmdOutput(zerolog.TraceLevel, "kubectl", pulledArgs...)
 		if err != nil {
 			return fmt.Errorf(L("failed to get events for pod %s"), podName)
 		}
@@ -115,7 +115,7 @@ func IsDeploymentReady(namespace string, name string) bool {
 	args := []string{"get", "-o", jsonpath, "deploy"}
 	args = addNamespace(args, namespace)
 
-	out, err := utils.RunCmdOutput(zerolog.TraceLevel, "kubectl", args...)
+	out, _, err := utils.RunCmdOutput(zerolog.TraceLevel, "kubectl", args...)
 	// kubectl errors out if the deployment or namespace doesn't exist
 	if err == nil {
 		if replicas, _ := strconv.Atoi(string(out)); replicas > 0 {
@@ -135,7 +135,7 @@ type DeploymentStatus struct {
 
 // GetDeploymentStatus returns the replicas status of the deployment.
 func GetDeploymentStatus(namespace string, name string) (*DeploymentStatus, error) {
-	out, err := utils.RunCmdOutput(zerolog.DebugLevel, "kubectl", "get", "deploy", "-n", namespace,
+	out, _, err := utils.RunCmdOutput(zerolog.DebugLevel, "kubectl", "get", "deploy", "-n", namespace,
 		name, "-o", "jsonpath={.status}")
 	if err != nil {
 		return nil, err
@@ -155,7 +155,7 @@ func ReplicasTo(namespace string, app string, replica uint) error {
 	log.Debug().Msgf("Setting replicas for pod in %s to %d", app, replica)
 	args = append(args, fmt.Sprint(replica), "-n", namespace)
 
-	_, err := utils.RunCmdOutput(zerolog.DebugLevel, "kubectl", args...)
+	_, _, err := utils.RunCmdOutput(zerolog.DebugLevel, "kubectl", args...)
 	if err != nil {
 		return utils.Errorf(err, L("cannot run kubectl %s"), args)
 	}
@@ -191,7 +191,7 @@ func isPodRunning(namespace string, podname string, filter string) (bool, error)
 func GetPods(namespace string, filter string) (pods []string, err error) {
 	log.Debug().Msgf("Checking all pods for %s", filter)
 	cmdArgs := []string{"get", "pods", "-n", namespace, filter, "--output=custom-columns=:.metadata.name", "--no-headers"}
-	out, err := utils.RunCmdOutput(zerolog.DebugLevel, "kubectl", cmdArgs...)
+	out, _, err := utils.RunCmdOutput(zerolog.DebugLevel, "kubectl", cmdArgs...)
 	if err != nil {
 		return pods, utils.Errorf(err, L("cannot execute %s"), strings.Join(cmdArgs, string(" ")))
 	}
@@ -209,7 +209,7 @@ func waitForReplicaZero(namespace string, podname string) error {
 	cmdArgs := []string{"get", "pod", podname, "-n", namespace}
 
 	for i := 0; i < waitSeconds; i++ {
-		out, err := utils.RunCmdOutput(zerolog.DebugLevel, "kubectl", cmdArgs...)
+		out, _, err := utils.RunCmdOutput(zerolog.DebugLevel, "kubectl", cmdArgs...)
 		/* Assume that if the command return an error at the first iteration, it's because it failed,
 		* next iteration because the pod was actually deleted
 		 */
@@ -235,7 +235,7 @@ func waitForReplica(namespace string, podname string, replica uint) error {
 	cmdArgs := []string{"get", "pod", podname, "-n", namespace, "--output=custom-columns=STATUS:.status.phase", "--no-headers"}
 
 	for i := 0; i < waitSeconds; i++ {
-		out, err := utils.RunCmdOutput(zerolog.DebugLevel, "kubectl", cmdArgs...)
+		out, _, err := utils.RunCmdOutput(zerolog.DebugLevel, "kubectl", cmdArgs...)
 		if err != nil {
 			return utils.Errorf(err, L("cannot execute %s"), strings.Join(cmdArgs, string(" ")))
 		}
@@ -313,7 +313,7 @@ func DeletePod(namespace string, podname string, filter string) error {
 		return nil
 	}
 	arguments := []string{"delete", "pod", podname, "-n", namespace}
-	_, err = utils.RunCmdOutput(zerolog.DebugLevel, "kubectl", arguments...)
+	_, _, err = utils.RunCmdOutput(zerolog.DebugLevel, "kubectl", arguments...)
 	if err != nil {
 		return utils.Errorf(err, L("cannot delete pod %s"), podname)
 	}
@@ -327,7 +327,7 @@ func waitForPod(namespace string, podname string) error {
 	cmdArgs := []string{"get", "pod", podname, "-n", namespace, "--output=custom-columns=STATUS:.status.phase", "--no-headers"}
 	var err error
 	for i := 0; i < waitSeconds; i++ {
-		out, err := utils.RunCmdOutput(zerolog.DebugLevel, "kubectl", cmdArgs...)
+		out, _, err := utils.RunCmdOutput(zerolog.DebugLevel, "kubectl", cmdArgs...)
 		outStr := strings.TrimSuffix(string(out), "\n")
 		if err != nil {
 			return utils.Errorf(err, L("cannot execute %s"), strings.Join(cmdArgs, string(" ")))
@@ -350,7 +350,7 @@ func GetNode(namespace string, filter string) (string, error) {
 	nodeName := ""
 	cmdArgs := []string{"get", "pod", "-n", namespace, filter, "-o", "jsonpath={.items[*].spec.nodeName}"}
 	for i := 0; i < 60; i++ {
-		out, err := utils.RunCmdOutput(zerolog.DebugLevel, "kubectl", cmdArgs...)
+		out, _, err := utils.RunCmdOutput(zerolog.DebugLevel, "kubectl", cmdArgs...)
 		if err == nil {
 			nodeName = string(out)
 			break

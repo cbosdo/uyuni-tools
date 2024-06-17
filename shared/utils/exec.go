@@ -56,7 +56,8 @@ func RunCmdStdMapping(logLevel zerolog.Level, command string, args ...string) er
 }
 
 // RunCmdOutput execute a shell command and collects output.
-func RunCmdOutput(logLevel zerolog.Level, command string, args ...string) ([]byte, error) {
+// It returns the stdout, the exit code and any possible error.
+func RunCmdOutput(logLevel zerolog.Level, command string, args ...string) ([]byte, int, error) {
 	localLogger := log.Level(logLevel)
 	s := spinner.New(spinner.CharSets[14], 100*time.Millisecond) // Build our new spinner
 	s.Suffix = fmt.Sprintf(" %s %s\n", command, strings.Join(args, " "))
@@ -64,12 +65,13 @@ func RunCmdOutput(logLevel zerolog.Level, command string, args ...string) ([]byt
 		s.Start() // Start the spinner
 	}
 	localLogger.Debug().Msgf("Running: %s %s", command, strings.Join(args, " "))
-	output, err := exec.Command(command, args...).Output()
+	cmd := exec.Command(command, args...)
+	output, err := cmd.Output()
 	if logLevel != zerolog.Disabled {
 		s.Stop()
 	}
 	localLogger.Trace().Msgf("Command output: %s, error: %s", output, err)
-	return output, err
+	return output, cmd.ProcessState.ExitCode(), err
 }
 
 // IsInstalled checks if a tool is in the path.

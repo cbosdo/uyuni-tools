@@ -93,7 +93,7 @@ func installSslIssuers(helmFlags *cmd_utils.HelmFlags, sslFlags *cmd_utils.SslCe
 
 	// Wait for issuer to be ready
 	for i := 0; i < 60; i++ {
-		out, err := utils.RunCmdOutput(zerolog.DebugLevel, "kubectl", "get", "-o=jsonpath={.status.conditions[*].type}",
+		out, _, err := utils.RunCmdOutput(zerolog.DebugLevel, "kubectl", "get", "-o=jsonpath={.status.conditions[*].type}",
 			"issuer", "uyuni-ca-issuer", "-n", issuerData.Namespace)
 		if err == nil && string(out) == "Ready" {
 			return []string{"--set-json", "ingressSslAnnotations={\"cert-manager.io/issuer\": \"uyuni-ca-issuer\"}"}, nil
@@ -148,14 +148,18 @@ func extractCaCertToConfig(namespace string) {
 
 	log.Info().Msg(L("Extracting CA certificate to a configmap"))
 	// Skip extracting if the configmap is already present
-	out, err := utils.RunCmdOutput(zerolog.DebugLevel, "kubectl", "get", "configmap", "uyuni-ca", jsonPath, "-n", namespace)
+	out, _, err := utils.RunCmdOutput(
+		zerolog.DebugLevel, "kubectl", "get", "configmap", "uyuni-ca", jsonPath, "-n", namespace,
+	)
 	log.Info().Msgf(L("CA cert: %s"), string(out))
 	if err == nil && len(out) > 0 {
 		log.Info().Msg(L("uyuni-ca configmap already existing, skipping extraction"))
 		return
 	}
 
-	out, err = utils.RunCmdOutput(zerolog.DebugLevel, "kubectl", "get", "secret", "uyuni-ca", jsonPath, "-n", namespace)
+	out, _, err = utils.RunCmdOutput(
+		zerolog.DebugLevel, "kubectl", "get", "secret", "uyuni-ca", jsonPath, "-n", namespace,
+	)
 	if err != nil {
 		log.Fatal().Err(err).Msgf(L("Failed to get uyuni-ca certificate"))
 	}

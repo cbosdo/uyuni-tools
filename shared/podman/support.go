@@ -64,7 +64,7 @@ func createSystemdDump(dir string) (string, error) {
 		return "", utils.Errorf(err, L("failed to create %s file"), systemdSupportConfig.Name())
 	}
 
-	out, err := utils.RunCmdOutput(zerolog.DebugLevel, "systemctl", "cat", "uyuni-*")
+	out, _, err := utils.RunCmdOutput(zerolog.DebugLevel, "systemctl", "cat", "uyuni-*")
 	if err != nil {
 		return "", utils.Errorf(err, L("failed to run systemctl cat uyuni-*"))
 	}
@@ -85,7 +85,7 @@ func runPodmanInspectCommand(dir string, container string) (string, error) {
 		return "", utils.Errorf(err, L("failed to create %s file"), podmanInspectDump)
 	}
 
-	out, err := utils.RunCmdOutput(zerolog.DebugLevel, "podman", "inspect", container)
+	out, _, err := utils.RunCmdOutput(zerolog.DebugLevel, "podman", "inspect", container)
 	if err != nil {
 		return "", utils.Errorf(err, L("failed to run podman inspect %s"), container)
 	}
@@ -108,7 +108,7 @@ func fetchBoundFileCommand(dir string, container string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	out, err := utils.RunCmdOutput(zerolog.DebugLevel, "podman", "inspect", container, "--format", "{{range .Mounts}}{{if eq .Type \"bind\"}} {{.Source}}{{end}}{{end}}")
+	out, _, err := utils.RunCmdOutput(zerolog.DebugLevel, "podman", "inspect", container, "--format", "{{range .Mounts}}{{if eq .Type \"bind\"}} {{.Source}}{{end}}{{end}}")
 	if err != nil {
 		return "", utils.Errorf(err, L("failed to run podman inspect %s"), container)
 	}
@@ -119,7 +119,7 @@ func fetchBoundFileCommand(dir string, container string) (string, error) {
 		if len(boundFile) <= 0 {
 			continue
 		}
-		out, err := utils.RunCmdOutput(zerolog.DebugLevel, "find", boundFile, "-type", "f")
+		out, _, err := utils.RunCmdOutput(zerolog.DebugLevel, "find", boundFile, "-type", "f")
 		if err != nil {
 			return "", err
 		}
@@ -130,7 +130,7 @@ func fetchBoundFileCommand(dir string, container string) (string, error) {
 			if err != nil {
 				return "", err
 			}
-			out, err := utils.RunCmdOutput(zerolog.DebugLevel, "cat", file)
+			out, _, err := utils.RunCmdOutput(zerolog.DebugLevel, "cat", file)
 			if err != nil {
 				return "", err
 			}
@@ -149,7 +149,7 @@ func runJournalCtlCommand(dir string, container string) (string, error) {
 		return "", utils.Errorf(err, L("failed create %s file"), journalctlDump)
 	}
 
-	out, err := utils.RunCmdOutput(zerolog.DebugLevel, "journalctl", "-u", container)
+	out, _, err := utils.RunCmdOutput(zerolog.DebugLevel, "journalctl", "-u", container)
 	if err != nil {
 		return "", utils.Errorf(err, L("failed to run journalctl -u %s"), container)
 	}
@@ -162,7 +162,10 @@ func runJournalCtlCommand(dir string, container string) (string, error) {
 }
 
 func getSystemdFileList() ([]byte, error) {
-	return utils.RunCmdOutput(zerolog.DebugLevel, "find", "/etc/systemd/system", "-maxdepth", "1", "-name", "uyuni-*service")
+	out, _, err := utils.RunCmdOutput(
+		zerolog.DebugLevel, "find", "/etc/systemd/system", "-maxdepth", "1", "-name", "uyuni-*service",
+	)
+	return out, err
 }
 
 func hostedContainers(systemd Systemd) ([]string, error) {

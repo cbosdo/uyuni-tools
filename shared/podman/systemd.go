@@ -8,10 +8,10 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"os/exec"
 	"path"
 	"strings"
 
+	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	. "github.com/uyuni-project/uyuni-tools/shared/l10n"
 	"github.com/uyuni-project/uyuni-tools/shared/utils"
@@ -190,11 +190,11 @@ func (s SystemdImpl) ReloadDaemon(dryRun bool) error {
 
 // IsServiceRunning returns whether the systemd service is started or not.
 func (s SystemdImpl) IsServiceRunning(service string) bool {
-	cmd := exec.Command("systemctl", "is-active", "-q", service)
-	if err := cmd.Run(); err != nil {
+	_, exitCode, err := utils.RunCmdOutput(zerolog.Disabled, "systemctl", "is-active", "-q", service)
+	if err != nil {
 		return false
 	}
-	return cmd.ProcessState.ExitCode() == 0
+	return exitCode == 0
 }
 
 // RestartService restarts the systemd service.

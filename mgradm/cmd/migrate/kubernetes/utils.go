@@ -208,7 +208,7 @@ func setupSsl(helm *adm_utils.HelmFlags, kubeconfig string, scriptDir string, pa
 		key := base64.StdEncoding.EncodeToString(ssl.GetRsaKey(caKey, password))
 
 		// Strip down the certificate text part
-		out, err := utils.RunCmdOutput(zerolog.DebugLevel, "openssl", "x509", "-in", caCert)
+		out, _, err := utils.RunCmdOutput(zerolog.DebugLevel, "openssl", "x509", "-in", caCert)
 		if err != nil {
 			return []string{}, utils.Errorf(err, L("failed to strip text part from CA certificate"))
 		}

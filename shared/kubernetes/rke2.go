@@ -32,7 +32,7 @@ func InstallRke2NginxConfig(tcpPorts []types.PortMap, udpPorts []types.PortMap, 
 	// Wait for the nginx controller to be back
 	log.Info().Msg(L("Waiting for Nginx controller to be reloaded"))
 	for i := 0; i < 60; i++ {
-		out, err := utils.RunCmdOutput(zerolog.DebugLevel, "kubectl", "get", "daemonset", "-A",
+		out, _, err := utils.RunCmdOutput(zerolog.DebugLevel, "kubectl", "get", "daemonset", "-A",
 			"-o", "jsonpath={.status.numberReady}", "rke2-ingress-nginx-controller")
 		if err == nil {
 			if count, err := strconv.Atoi(string(out)); err == nil && count > 0 {
