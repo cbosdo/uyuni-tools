@@ -5,6 +5,7 @@
 package cache
 
 import (
+	"github.com/rs/zerolog"
 	"github.com/spf13/cobra"
 	"github.com/uyuni-project/uyuni-tools/shared"
 	. "github.com/uyuni-project/uyuni-tools/shared/l10n"
@@ -23,11 +24,11 @@ func podmanCacheClear(
 ) error {
 	cnx := shared.NewConnection("podman", "uyuni-proxy-squid", "")
 
-	if _, err := cnx.Exec("sh", "-c", "rm -rf /var/cache/squid/*"); err != nil {
+	if _, err := cnx.Exec(zerolog.TraceLevel, "sh", "-c", "rm -rf /var/cache/squid/*"); err != nil {
 		return utils.Errorf(err, L("failed to remove cached data"))
 	}
 
-	if _, err := cnx.Exec("sh", "-c", "squid -z --foreground"); err != nil {
+	if _, err := cnx.Exec(zerolog.TraceLevel, "sh", "-c", "squid -z --foreground"); err != nil {
 		return utils.Errorf(err, L("failed to re-create the cache directories"))
 	}
 

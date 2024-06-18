@@ -14,7 +14,6 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/uyuni-project/uyuni-tools/mgradm/shared/templates"
-	adm_utils "github.com/uyuni-project/uyuni-tools/mgradm/shared/utils"
 	"github.com/uyuni-project/uyuni-tools/shared"
 	"github.com/uyuni-project/uyuni-tools/shared/api"
 	"github.com/uyuni-project/uyuni-tools/shared/api/org"
@@ -43,7 +42,7 @@ func RunSetup(cnx *shared.Connection, flags *InstallFlags, fqdn string, env map[
 		return utils.Errorf(err, L("cannot copy /tmp/setup.sh"))
 	}
 
-	err = adm_utils.ExecCommand(zerolog.InfoLevel, cnx, "/tmp/setup.sh")
+	_, err = cnx.Exec(zerolog.InfoLevel, "/tmp/setup.sh")
 	if err != nil && !preconfigured {
 		return utils.Errorf(err, L("error running the setup script"))
 	}

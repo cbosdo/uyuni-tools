@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 	"github.com/uyuni-project/uyuni-tools/shared"
@@ -59,7 +60,7 @@ func register(globalFlags *types.GlobalFlags, flags *configFlags, cmd *cobra.Com
 }
 
 func getRhnConfig(cnx *shared.Connection) (map[string]string, error) {
-	out, err := cnx.Exec("/bin/cat", "/etc/rhn/rhn.conf")
+	out, err := cnx.Exec(zerolog.TraceLevel, "/bin/cat", "/etc/rhn/rhn.conf")
 	if err != nil {
 		return nil, err
 	}

@@ -12,7 +12,6 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
-	adm_utils "github.com/uyuni-project/uyuni-tools/mgradm/shared/utils"
 	"github.com/uyuni-project/uyuni-tools/shared"
 	"github.com/uyuni-project/uyuni-tools/shared/kubernetes"
 	. "github.com/uyuni-project/uyuni-tools/shared/l10n"
@@ -46,7 +45,7 @@ func kubernetesStatus(
 	}
 
 	// Are the services running in the container?
-	if err := adm_utils.ExecCommand(zerolog.InfoLevel, cnx, "spacewalk-service", "status"); err != nil {
+	if _, err := cnx.Exec(zerolog.InfoLevel, "spacewalk-service", "status"); err != nil {
 		return utils.Errorf(err, L("failed to run spacewalk-service status"))
 	}
 	return nil

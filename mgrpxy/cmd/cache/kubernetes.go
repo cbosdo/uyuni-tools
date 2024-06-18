@@ -5,6 +5,7 @@
 package cache
 
 import (
+	"github.com/rs/zerolog"
 	"github.com/spf13/cobra"
 	"github.com/uyuni-project/uyuni-tools/shared"
 	"github.com/uyuni-project/uyuni-tools/shared/kubernetes"
@@ -25,11 +26,11 @@ func kubernetesCacheClear(
 		return utils.Errorf(err, L("failed retrieving namespace"))
 	}
 
-	if _, err := cnx.Exec("find", "/var/cache/squid", "-mindepth", "1", "-delete"); err != nil {
+	if _, err := cnx.Exec(zerolog.TraceLevel, "find", "/var/cache/squid", "-mindepth", "1", "-delete"); err != nil {
 		return utils.Errorf(err, L("failed to remove cached data"))
 	}
 
-	if _, err := cnx.Exec("squid", "-z", "--foreground"); err != nil {
+	if _, err := cnx.Exec(zerolog.TraceLevel, "squid", "-z", "--foreground"); err != nil {
 		return utils.Errorf(err, L("failed to re-create the cache directories"))
 	}
 

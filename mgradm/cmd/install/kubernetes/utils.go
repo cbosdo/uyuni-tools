@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"os/exec"
 
+	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 	install_shared "github.com/uyuni-project/uyuni-tools/mgradm/cmd/install/shared"
@@ -96,7 +97,7 @@ func installForKubernetes(globalFlags *types.GlobalFlags,
 	}
 
 	// The CA needs to be added to the database for Kickstart use.
-	_, err = cnx.Exec("/usr/bin/rhn-ssl-dbstore", "--ca-cert=/etc/pki/trust/anchors/LOCAL-RHN-ORG-TRUSTED-SSL-CERT")
+	_, err = cnx.Exec(zerolog.TraceLevel, "/usr/bin/rhn-ssl-dbstore", "--ca-cert=/etc/pki/trust/anchors/LOCAL-RHN-ORG-TRUSTED-SSL-CERT")
 	if err != nil {
 		return shared_utils.Errorf(err, L("error storing the SSL CA certificate in database"))
 	}

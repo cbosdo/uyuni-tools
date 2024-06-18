@@ -7,7 +7,6 @@ package utils
 import (
 	"errors"
 	"fmt"
-	"os/exec"
 	"path/filepath"
 	"strings"
 
@@ -19,37 +18,6 @@ import (
 	. "github.com/uyuni-project/uyuni-tools/shared/l10n"
 	"github.com/uyuni-project/uyuni-tools/shared/utils"
 )
-
-// ExecCommand execute commands passed as argument in the current system.
-func ExecCommand(logLevel zerolog.Level, cnx *shared.Connection, args ...string) error {
-	podName, err := cnx.GetPodName()
-	if err != nil {
-		return utils.Errorf(err, L("exec command failed"))
-	}
-
-	commandArgs := []string{"exec", podName}
-
-	command, err := cnx.GetCommand()
-	if err != nil {
-		log.Fatal().Err(err)
-	}
-
-	if command == "kubectl" {
-		namespace, err := cnx.GetNamespace("")
-		if namespace == "" {
-			return utils.Errorf(err, L("failed retrieving namespace"))
-		}
-		commandArgs = append(commandArgs, "-n", namespace, "-c", "uyuni", "--")
-	}
-
-	commandArgs = append(commandArgs, "sh", "-c", strings.Join(args, " "))
-
-	runCmd := exec.Command(command, commandArgs...)
-	logger := log.Logger.Level(logLevel)
-	runCmd.Stdout = logger
-	runCmd.Stderr = logger
-	return runCmd.Run()
-}
 
 // GeneratePgsqlVersionUpgradeScript generates the PostgreSQL version upgrade script.
 func GeneratePgsqlVersionUpgradeScript(scriptDir string, oldPgVersion string, newPgVersion string, kubernetes bool) (string, error) {
@@ -104,7 +72,7 @@ func GeneratePostUpgradeScript(scriptDir string, cobblerHost string) (string, er
 // RunMigration execute the migration script.
 func RunMigration(cnx *shared.Connection, tmpPath string, scriptName string) error {
 	log.Info().Msg(L("Migrating server"))
-	err := ExecCommand(zerolog.InfoLevel, cnx, "/var/lib/uyuni-tools/"+scriptName)
+	_, err := cnx.Exec(zerolog.InfoLevel, "/var/lib/uyuni-tools/"+scriptName)
 	if err != nil {
 		return utils.Errorf(err, L("error running the migration script"))
 	}
@@ -190,7 +158,7 @@ func SanityCheck(cnx *shared.Connection, inspectedValues *utils.ServerInspectDat
 
 	if isUyuni {
 		cnx_args := []string{"s/Uyuni release //g", "/etc/uyuni-release"}
-		current_uyuni_release, err := cnx.Exec("sed", cnx_args...)
+		current_uyuni_release, err := cnx.Exec(zerolog.TraceLevel, "sed", cnx_args...)
 		if err != nil {
 			return utils.Errorf(err, L("failed to read current uyuni release"))
 		}
@@ -206,7 +174,9 @@ func SanityCheck(cnx *shared.Connection, inspectedValues *utils.ServerInspectDat
 			)
 		}
 	} else {
-		b_current_suse_manager_release, err := cnx.Exec("sed", "s/.*(\\([0-9.]*\\)).*/\\1/g", "/etc/susemanager-release")
+		b_current_suse_manager_release, err := cnx.Exec(
+			zerolog.TraceLevel, "sed", "s/.*(\\([0-9.]*\\)).*/\\1/g", "/etc/susemanager-release",
+		)
 		current_suse_manager_release := strings.TrimSuffix(string(b_current_suse_manager_release), "\n")
 		if err != nil {
 			return utils.Errorf(err, L("failed to read current susemanager release"))
@@ -238,10 +208,10 @@ func SanityCheck(cnx *shared.Connection, inspectedValues *utils.ServerInspectDat
 
 func isUyuni(cnx *shared.Connection) (bool, error) {
 	cnx_args := []string{"/etc/uyuni-release"}
-	_, err := cnx.Exec("cat", cnx_args...)
+	_, err := cnx.Exec(zerolog.TraceLevel, "cat", cnx_args...)
 	if err != nil {
 		cnx_args := []string{"/etc/susemanager-release"}
-		_, err := cnx.Exec("cat", cnx_args...)
+		_, err := cnx.Exec(zerolog.TraceLevel, "cat", cnx_args...)
 		if err != nil {
 			return false, errors.New(L("cannot find either /etc/uyuni-release or /etc/susemanagere-release"))
 		}

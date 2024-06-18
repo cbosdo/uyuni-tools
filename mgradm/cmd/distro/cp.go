@@ -111,7 +111,7 @@ func copyDistro(srcdir string, distro *types.Distribution, flags *flagpole) erro
 		return fmt.Errorf(L("distribution with same name already exists: %s"), dstpath)
 	}
 
-	if _, err := cnx.Exec("mkdir -p " + distrosPath); err != nil {
+	if _, err := cnx.Exec(zerolog.TraceLevel, "mkdir -p "+distrosPath); err != nil {
 		return utils.Errorf(err, L("cannot create %s path in container"), distrosPath)
 	}
 
@@ -125,7 +125,8 @@ func copyDistro(srcdir string, distro *types.Distribution, flags *flagpole) erro
 
 func getServerFqdn(flags *flagpole) (string, error) {
 	cnx := shared.NewConnection(flags.Backend, podman.ServerContainerName, kubernetes.ServerFilter)
-	fqdn, err := cnx.Exec("sh", "-c", "cat /etc/rhn/rhn.conf 2>/dev/null | grep 'java.hostname' | cut -d' ' -f3")
+	fqdn, err := cnx.Exec(zerolog.TraceLevel, "sh", "-c",
+		"cat /etc/rhn/rhn.conf 2>/dev/null | grep 'java.hostname' | cut -d' ' -f3")
 	return strings.TrimSuffix(string(fqdn), "\n"), err
 }
 

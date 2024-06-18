@@ -9,8 +9,8 @@ import (
 
 	"github.com/rs/zerolog"
 	"github.com/spf13/cobra"
-	adm_utils "github.com/uyuni-project/uyuni-tools/mgradm/shared/utils"
 	"github.com/uyuni-project/uyuni-tools/shared"
+	. "github.com/uyuni-project/uyuni-tools/shared/l10n"
 	"github.com/uyuni-project/uyuni-tools/shared/podman"
 	"github.com/uyuni-project/uyuni-tools/shared/types"
 	"github.com/uyuni-project/uyuni-tools/shared/utils"
@@ -30,7 +30,9 @@ func podmanStatus(
 	} else {
 		// Run spacewalk-service status in the container
 		cnx := shared.NewConnection("podman", podman.ServerContainerName, "")
-		_ = adm_utils.ExecCommand(zerolog.InfoLevel, cnx, "spacewalk-service", "status")
+		if _, err := cnx.Exec(zerolog.InfoLevel, "spacewalk-service", "status"); err != nil {
+			return utils.Errorf(err, L("failed to run spacewalk-service status"))
+		}
 	}
 
 	for i := 0; i < systemd.CurrentReplicaCount(podman.ServerAttestationService); i++ {

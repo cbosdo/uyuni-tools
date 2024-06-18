@@ -203,7 +203,7 @@ func (c *Connection) GetPodName() (string, error) {
 }
 
 // Exec runs command inside the container within an sh shell.
-func (c *Connection) Exec(command string, args ...string) ([]byte, error) {
+func (c *Connection) Exec(logLevel zerolog.Level, command string, args ...string) ([]byte, error) {
 	if c.podName == "" {
 		if _, err := c.GetPodName(); c.podName == "" {
 			commandStr := fmt.Sprintf("%s %s", command, strings.Join(args, " "))
@@ -228,11 +228,16 @@ func (c *Connection) Exec(command string, args ...string) ([]byte, error) {
 
 		cmdArgs = append(cmdArgs, "-n", c.namespace, "-c", c.container, "--")
 	}
-	shellArgs := append([]string{command}, args...)
-	cmdArgs = append(cmdArgs, shellArgs...)
+	cmdArgs = append(cmdArgs, command)
+	cmdArgs = append(cmdArgs, args...)
 
-	out, _, err := utils.RunCmdOutput(zerolog.DebugLevel, cmd, cmdArgs...)
-	return out, err
+	log.Debug().Msgf("Running: %s %s", cmd, strings.Join(cmdArgs, " "))
+
+	runCmd := exec.Command(command, cmdArgs...)
+	logger := log.Logger.Level(logLevel)
+	runCmd.Stdout = logger
+	runCmd.Stderr = logger
+	return runCmd.Output()
 }
 
 // WaitForContainer waits up to 10 sec for the container to appear.
@@ -493,7 +498,7 @@ func (cnx *Connection) RunSupportConfig(tmpDir string) ([]string, error) {
 
 	// Run supportconfig in the container if it's running
 	log.Info().Msgf(L("Running supportconfig in  %s"), containerName)
-	out, err := cnx.Exec("supportconfig")
+	out, err := cnx.Exec(zerolog.TraceLevel, "supportconfig")
 	if err != nil {
 		return []string{}, errors.New(L("failed to run supportconfig"))
 	} else {
@@ -510,7 +515,7 @@ func (cnx *Connection) RunSupportConfig(tmpDir string) ([]string, error) {
 			files = append(files, containerTarball)
 
 			// Remove the generated file in the container
-			if _, err := cnx.Exec("rm", tarballPath+ext); err != nil {
+			if _, err := cnx.Exec(zerolog.TraceLevel, "rm", tarballPath+ext); err != nil {
 				return []string{}, utils.Errorf(err, L("failed to remove %s file in the container"), tarballPath+ext)
 			}
 		}

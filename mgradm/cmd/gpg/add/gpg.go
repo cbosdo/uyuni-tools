@@ -48,10 +48,11 @@ func NewCommand(globalFlags *types.GlobalFlags) *cobra.Command {
 func gpgAddKeys(globalFlags *types.GlobalFlags, flags *gpgAddFlags, cmd *cobra.Command, args []string) error {
 	cnx := shared.NewConnection(flags.Backend, podman.ServerContainerName, kubernetes.ServerFilter)
 	if !cnx.TestExistenceInPod(customKeyringPath) {
-		if _, err := cnx.Exec("mkdir", "-m", "700", "-p", filepath.Dir(customKeyringPath)); err != nil {
+		if _, err := cnx.Exec(zerolog.TraceLevel, "mkdir", "-m", "700", "-p",
+			filepath.Dir(customKeyringPath)); err != nil {
 			return utils.Errorf(err, L("failed to create folder %s"), filepath.Dir(customKeyringPath))
 		}
-		if _, err := cnx.Exec("gpg", "--no-default-keyring", "--keyring", customKeyringPath, "--fingerprint"); err != nil {
+		if _, err := cnx.Exec(zerolog.TraceLevel, "gpg", "--no-default-keyring", "--keyring", customKeyringPath, "--fingerprint"); err != nil {
 			return utils.Errorf(err, L("failed to create keyring %s"), customKeyringPath)
 		}
 	}
@@ -109,19 +110,19 @@ func gpgAddKeys(globalFlags *types.GlobalFlags, flags *gpgAddFlags, cmd *cobra.C
 			continue
 		}
 		defer func() {
-			_, _ = cnx.Exec("rm", containerKeyPath)
+			_, _ = cnx.Exec(zerolog.TraceLevel, "rm", containerKeyPath)
 		}()
 
 		gpgAddCmd = append(gpgAddCmd, containerKeyPath)
 	}
 
-	if _, err := cnx.Exec("gpg", gpgAddCmd...); err != nil {
+	if _, err := cnx.Exec(zerolog.TraceLevel, "gpg", gpgAddCmd...); err != nil {
 		return utils.Errorf(err, L("failed to run import key"))
 	}
 
 	//this is for running import-suma-build-keys, who import customer-build-keys.gpg
 	uyuniUpdateCmd := []string{"restart", "uyuni-update-config"}
-	if _, err := cnx.Exec("systemctl", uyuniUpdateCmd...); err != nil {
+	if _, err := cnx.Exec(zerolog.TraceLevel, "systemctl", uyuniUpdateCmd...); err != nil {
 		return utils.Errorf(err, L("failed to restart uyuni-update-config"))
 	}
 	return err

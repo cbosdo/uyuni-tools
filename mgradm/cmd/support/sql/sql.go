@@ -15,6 +15,7 @@ import (
 	"path"
 	"strings"
 
+	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 	"github.com/uyuni-project/uyuni-tools/shared"
@@ -46,7 +47,7 @@ func prepareSource(args []string, cnx *shared.Connection) (string, error) {
 }
 
 func cleanupSource(file string, cnx *shared.Connection) {
-	if _, err := cnx.Exec("rm", file); err != nil {
+	if _, err := cnx.Exec(zerolog.TraceLevel, "rm", file); err != nil {
 		log.Error().Err(err).Msg(L("unable to cleanup source file"))
 	}
 }
