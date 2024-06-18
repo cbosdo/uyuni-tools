@@ -9,12 +9,10 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"strings"
 
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
-	adm_utils "github.com/uyuni-project/uyuni-tools/mgradm/shared/utils"
 	"github.com/uyuni-project/uyuni-tools/shared"
 	"github.com/uyuni-project/uyuni-tools/shared/kubernetes"
 	. "github.com/uyuni-project/uyuni-tools/shared/l10n"
@@ -50,14 +48,14 @@ func NewCommand(globalFlags *types.GlobalFlags) *cobra.Command {
 func gpgAddKeys(globalFlags *types.GlobalFlags, flags *gpgAddFlags, cmd *cobra.Command, args []string) error {
 	cnx := shared.NewConnection(flags.Backend, podman.ServerContainerName, kubernetes.ServerFilter)
 	if !cnx.TestExistenceInPod(customKeyringPath) {
-		if err := adm_utils.ExecCommand(zerolog.InfoLevel, cnx, "mkdir", "-m", "700", "-p", filepath.Dir(customKeyringPath)); err != nil {
+		if _, err := cnx.Exec("mkdir", "-m", "700", "-p", filepath.Dir(customKeyringPath)); err != nil {
 			return utils.Errorf(err, L("failed to create folder %s"), filepath.Dir(customKeyringPath))
 		}
-		if err := adm_utils.ExecCommand(zerolog.InfoLevel, cnx, "gpg", "--no-default-keyring", "--keyring", customKeyringPath, "--fingerprint"); err != nil {
+		if _, err := cnx.Exec("gpg", "--no-default-keyring", "--keyring", customKeyringPath, "--fingerprint"); err != nil {
 			return utils.Errorf(err, L("failed to create keyring %s"), customKeyringPath)
 		}
 	}
-	gpgAddCmd := []string{"gpg", "--no-default-keyring", "--import", "--import-options", "import-minimal"}
+	gpgAddCmd := []string{"--no-default-keyring", "--import", "--import-options", "import-minimal"}
 
 	gpgAddCmd = append(gpgAddCmd, "--keyring", customKeyringPath)
 
@@ -111,21 +109,19 @@ func gpgAddKeys(globalFlags *types.GlobalFlags, flags *gpgAddFlags, cmd *cobra.C
 			continue
 		}
 		defer func() {
-			_ = adm_utils.ExecCommand(zerolog.Disabled, cnx, "rm", containerKeyPath)
+			_, _ = cnx.Exec("rm", containerKeyPath)
 		}()
 
 		gpgAddCmd = append(gpgAddCmd, containerKeyPath)
 	}
 
-	log.Info().Msgf(L("Running %s"), strings.Join(gpgAddCmd, " "))
-	if err := adm_utils.ExecCommand(zerolog.InfoLevel, cnx, gpgAddCmd...); err != nil {
+	if _, err := cnx.Exec("gpg", gpgAddCmd...); err != nil {
 		return utils.Errorf(err, L("failed to run import key"))
 	}
 
 	//this is for running import-suma-build-keys, who import customer-build-keys.gpg
-	uyuniUpdateCmd := []string{"systemctl", "restart", "uyuni-update-config"}
-	log.Info().Msgf(L("Running %s"), strings.Join(uyuniUpdateCmd, " "))
-	if err := adm_utils.ExecCommand(zerolog.InfoLevel, cnx, uyuniUpdateCmd...); err != nil {
+	uyuniUpdateCmd := []string{"restart", "uyuni-update-config"}
+	if _, err := cnx.Exec("systemctl", uyuniUpdateCmd...); err != nil {
 		return utils.Errorf(err, L("failed to restart uyuni-update-config"))
 	}
 	return err

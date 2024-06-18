@@ -111,7 +111,7 @@ func copyDistro(srcdir string, distro *types.Distribution, flags *flagpole) erro
 		return fmt.Errorf(L("distribution with same name already exists: %s"), dstpath)
 	}
 
-	if _, err := cnx.Exec("sh", "-c", "mkdir -p "+distrosPath); err != nil {
+	if _, err := cnx.Exec("mkdir -p " + distrosPath); err != nil {
 		return utils.Errorf(err, L("cannot create %s path in container"), distrosPath)
 	}
 
