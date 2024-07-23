@@ -111,7 +111,11 @@ func GetServiceImage(service string) string {
 		return ""
 	}
 
-	content := string(utils.ReadFile(serviceConfPath))
+	contentBytes, err := utils.ReadFile(serviceConfPath)
+	if err != nil {
+		log.Err(err).Msgf(L("failed to get image from service configuration file %s"), serviceConfPath)
+	}
+	content := string(contentBytes)
 	lines := strings.Split(content, "\n")
 	const imagePrefix = "Environment=UYUNI_IMAGE="
 	for _, line := range lines {

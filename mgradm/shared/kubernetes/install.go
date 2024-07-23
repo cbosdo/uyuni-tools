@@ -88,14 +88,20 @@ func DeployCertificate(helmFlags *cmd_utils.HelmFlags, sslFlags *cmd_utils.SslCe
 }
 
 // DeployExistingCertificate execute a deploy of an existing certificate.
-func DeployExistingCertificate(helmFlags *cmd_utils.HelmFlags, sslFlags *cmd_utils.SslCertFlags, kubeconfig string) {
+func DeployExistingCertificate(
+	helmFlags *cmd_utils.HelmFlags, sslFlags *cmd_utils.SslCertFlags, kubeconfig string,
+) error {
 	// Deploy the SSL Certificate secret and CA configmap
 	serverCrt, rootCaCrt := ssl.OrderCas(&sslFlags.Ca, &sslFlags.Server)
-	serverKey := utils.ReadFile(sslFlags.Server.Key)
+	serverKey, err := utils.ReadFile(sslFlags.Server.Key)
+	if err != nil {
+		return err
+	}
 	installTlsSecret(helmFlags.Uyuni.Namespace, serverCrt, serverKey, rootCaCrt)
 
 	// Extract the CA cert into uyuni-ca config map as the container shouldn't have the CA secret
 	extractCaCertToConfig()
+	return nil
 }
 
 // UyuniUpgrade runs an helm upgrade using images and helm configuration as parameters.

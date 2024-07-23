@@ -277,7 +277,11 @@ func CleanSystemdConfFile(serviceName string) error {
 	// - generated.conf with the image
 	// - custom.conf with everything that shouldn't be touched at upgrade
 	if utils.FileExists(oldConfPath) {
-		content := string(utils.ReadFile(oldConfPath))
+		contentBytes, err := utils.ReadFile(oldConfPath)
+		if err != nil {
+			return nil
+		}
+		content := string(contentBytes)
 		lines := strings.Split(content, "\n")
 
 		generated := ""

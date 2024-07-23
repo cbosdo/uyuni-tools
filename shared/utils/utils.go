@@ -258,19 +258,23 @@ func FileExists(path string) bool {
 	return false
 }
 
-// Returns the content of a file and exit if there was an error.
-func ReadFile(file string) []byte {
+// Returns the content of a file.
+func ReadFile(file string) ([]byte, error) {
 	out, err := os.ReadFile(file)
 	if err != nil {
-		log.Fatal().Err(err).Msgf(L("Failed to read file %s"), file)
+		return []byte{}, Errorf(err, L("Failed to read file %s"))
 	}
-	return out
+	return out, nil
 }
 
 // Get the value of a file containing a boolean.
 // This is handy for files from the kernel API.
-func GetFileBoolean(file string) bool {
-	return strings.TrimSpace(string(ReadFile(file))) != "0"
+func GetFileBoolean(file string) (bool, error) {
+	content, err := ReadFile(file)
+	if err != nil {
+		return false, err
+	}
+	return strings.TrimSpace(string(content)) != "0", nil
 }
 
 // Uninstalls a file.
