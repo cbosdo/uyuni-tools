@@ -16,6 +16,10 @@ import (
 	"github.com/uyuni-project/uyuni-tools/shared/utils"
 )
 
+// kubernetesTokenPath is the path to the serviceaccount token in a pod.
+const kubernetesTokenPath = "/var/run/secrets/kubernetes.io/serviceaccount/token"
+const kubernetesCaPath = "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
+
 // HelmUpgrade runs the helm upgrade command.
 //
 // To perform an installation, set the install parameter to true: helm would get the --install parameter.
@@ -30,9 +34,7 @@ func HelmUpgrade(kubeconfig string, namespace string, install bool,
 		name,
 		chart,
 	}
-	if kubeconfig != "" {
-		helmArgs = append(helmArgs, "--kubeconfig", kubeconfig)
-	}
+	helmArgs = append(helmArgs, getKubeCredentials(kubeconfig)...)
 
 	if repo != "" {
 		helmArgs = append(helmArgs, "--repo", repo)
@@ -67,10 +69,7 @@ func HelmUninstall(namespace string, kubeconfig string, deployment string, dryRu
 		return fmt.Errorf(L("namespace is required"))
 	}
 
-	helmArgs := []string{}
-	if kubeconfig != "" {
-		helmArgs = append(helmArgs, "--kubeconfig", kubeconfig)
-	}
+	helmArgs := getKubeCredentials(kubeconfig)
 	helmArgs = append(helmArgs, "uninstall", "-n", namespace, deployment)
 
 	if dryRun {
@@ -87,13 +86,26 @@ func HelmUninstall(namespace string, kubeconfig string, deployment string, dryRu
 // HasHelmRelease returns whether a helm release is installed or not, even if it failed.
 func HasHelmRelease(release string, kubeconfig string) bool {
 	if _, err := exec.LookPath("helm"); err == nil {
-		args := []string{}
-		if kubeconfig != "" {
-			args = append(args, "--kubeconfig", kubeconfig)
-		}
+		args := getKubeCredentials(kubeconfig)
 		args = append(args, "list", "-aAq", "--no-headers", "-f", release)
 		out, err := utils.RunCmdOutput(zerolog.TraceLevel, "helm", args...)
 		return len(bytes.TrimSpace(out)) != 0 && err == nil
 	}
 	return false
+}
+
+func getKubeCredentials(kubeconfig string) []string {
+	if utils.FileExists(kubernetesTokenPath) {
+		token, err := utils.ReadFile(kubernetesTokenPath)
+		if err != nil {
+			log.Err(err).Msgf(L("failed to read %s file"), kubernetesTokenPath)
+		}
+		return []string{
+			"--kube-token", string(token),
+			"--kube-ca-file", kubernetesCaPath,
+		}
+	} else if kubeconfig != "" {
+		return []string{"--kubeconfig", kubeconfig}
+	}
+	return []string{}
 }
